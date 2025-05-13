@@ -15,10 +15,10 @@ Run a maelstrom echo test, assuming both `maelstrom` and `seastar` are on the PA
 maelstrom test -w echo --bin seastar --time-limit 5
 ```
 
-A just file exists for convenience, so long as your directory setup is exactly as mine.
+A justfile exists for convenience. Assuming maelstrom is untarred into the maelstrom directory, run the echo test with:
 
 ```sh
-just echo # Run a the maelstrom echo server test
+just echo
 ```
 
 ## Notes

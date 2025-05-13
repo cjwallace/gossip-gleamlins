@@ -158,7 +158,7 @@ pub fn handle_request(request: String) -> Result(ResponseMessage, String) {
     Ok(message) -> {
       Ok(respond(message))
     }
-    Error(_) -> Error("Invalid request message received " <> request)
+    Error(_) -> Error("Invalid request message received: " <> request)
   }
 }
 
@@ -169,7 +169,7 @@ pub fn main() -> Nil {
       let response = handle_request(request)
       case response {
         Ok(message) -> encode_response(message) |> io.println
-        Error(error) -> io.println(error)
+        Error(error) -> io.println_error(error)
       }
     }
     _ -> Nil
