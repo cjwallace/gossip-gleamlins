@@ -1,10 +1,14 @@
 import gleam/dynamic/decode
 import gleam/erlang
+import gleam/erlang/process.{type Subject}
 import gleam/int
 import gleam/io
 import gleam/json
+import gleam/otp/actor
 
-type RequestBody {
+// Parsing
+
+pub type RequestBody {
   InitRequest(
     message_type: String,
     msg_id: Int,
@@ -14,7 +18,7 @@ type RequestBody {
   EchoRequest(message_type: String, msg_id: Int, echo_instruction: String)
 }
 
-type RequestMessage {
+pub type RequestMessage {
   RequestMessage(src: String, dest: String, body: RequestBody)
 }
 
@@ -72,7 +76,7 @@ fn decode_message() {
   decode.success(RequestMessage(src: src, dest: dest, body: body))
 }
 
-fn decode_request(string: String) {
+pub fn decode_request(string: String) {
   let decoder = decode_message()
   let message = json.parse(from: string, using: decoder)
   message
@@ -116,63 +120,103 @@ fn encode_response(message: ResponseMessage) {
   |> json.to_string()
 }
 
-fn respond(message: RequestMessage) -> ResponseMessage {
-  case message {
-    RequestMessage(
-      src,
-      _dest,
-      InitRequest(_message_type, msg_id, node_id, _all_node_ids),
-    ) -> {
-      ResponseMessage(
-        src: node_id,
-        dest: src,
-        body: InitResponse(
-          message_type: "init_ok",
-          msg_id: int.random(1000),
-          in_reply_to: msg_id,
-        ),
-      )
-    }
-    RequestMessage(
-      src,
-      dest,
-      EchoRequest(_message_type, msg_id, echo_instruction),
-    ) -> {
-      ResponseMessage(
-        src: dest,
-        dest: src,
-        body: EchoResponse(
-          message_type: "echo_ok",
-          msg_id: int.random(1000),
-          echo_instruction: echo_instruction,
-          in_reply_to: msg_id,
-        ),
-      )
-    }
+// Actor
+
+pub type Node {
+  Node(id: String, all_node_ids: List(String))
+}
+
+pub type Command {
+  Init(
+    src: String,
+    msg_id: Int,
+    node_id: String,
+    all_node_ids: List(String),
+    reply_to: Subject(ResponseMessage),
+  )
+  Echo(
+    src: String,
+    msg_id: Int,
+    echo_instruction: String,
+    reply_to: Subject(ResponseMessage),
+  )
+}
+
+fn handle_init(
+  src: String,
+  msg_id: Int,
+  node_id: String,
+  all_node_ids: List(String),
+  reply_to: Subject(ResponseMessage),
+) {
+  let new_node = Node(id: node_id, all_node_ids: all_node_ids)
+  let response =
+    ResponseMessage(
+      src: new_node.id,
+      dest: src,
+      body: InitResponse(
+        message_type: "init_ok",
+        msg_id: int.random(1000),
+        in_reply_to: msg_id,
+      ),
+    )
+
+  process.send(reply_to, response)
+  actor.continue(new_node)
+}
+
+fn handle_echo(
+  node: Node,
+  src: String,
+  msg_id: Int,
+  echo_instruction: String,
+  reply_to: Subject(ResponseMessage),
+) {
+  let response =
+    ResponseMessage(
+      src: node.id,
+      dest: src,
+      body: EchoResponse(
+        message_type: "echo_ok",
+        msg_id: int.random(1000),
+        in_reply_to: msg_id,
+        echo_instruction: echo_instruction,
+      ),
+    )
+  process.send(reply_to, response)
+  actor.continue(node)
+}
+
+pub fn handler(command: Command, node: Node) {
+  case command {
+    Init(src, msg_id, node_id, all_node_ids, reply_to) ->
+      handle_init(src, msg_id, node_id, all_node_ids, reply_to)
+    Echo(src, msg_id, echo_instruction, reply_to) ->
+      handle_echo(node, src, msg_id, echo_instruction, reply_to)
   }
 }
 
-pub fn handle_request(request: String) -> Result(ResponseMessage, String) {
-  let message = decode_request(request)
-  case message {
-    Ok(message) -> {
-      Ok(respond(message))
-    }
-    Error(_) -> Error("Invalid request message received: " <> request)
-  }
-}
-
-pub fn main() -> Nil {
-  let line = erlang.get_line("")
-  case line {
-    Ok(request) -> {
-      let response = handle_request(request)
-      case response {
-        Ok(message) -> encode_response(message) |> io.println
-        Error(error) -> io.println_error(error)
+fn loop(node: Subject(Command)) {
+  let assert Ok(line) = erlang.get_line("")
+  case decode_request(line) {
+    Ok(RequestMessage(src, _, body)) -> {
+      let response = case body {
+        InitRequest(_, msg_id, node_id, all_node_ids) -> {
+          actor.call(node, Init(src, msg_id, node_id, all_node_ids, _), 50)
+        }
+        EchoRequest(_, msg_id, echo_instruction) -> {
+          actor.call(node, Echo(src, msg_id, echo_instruction, _), 50)
+        }
       }
+
+      encode_response(response) |> io.println
     }
-    _ -> Nil
+    Error(_) -> io.println_error("Failed to parse request")
   }
-  main()
+  loop(node)
+}
+
+pub fn main() {
+  let assert Ok(node) = actor.start(Node(id: "", all_node_ids: []), handler)
+  loop(node)
 }
