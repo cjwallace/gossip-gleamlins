@@ -25,11 +25,12 @@ just echo
 
 ## Notes
 
-This doesn't set up any mutable state, and as such only works for the echo server test, since no persistent record of the node_id is kept.
 Next up:
-- Use actors!
-- Do I really need this much manual parsing for each message type? I hope not.
-  - Parser combinators?
-  - Registry of encoders/decoders?
-  - Less strict typing, more optionals?
-  - Profit?
+- increment msg_id, which should also be optional
+- separate message parsing from message processing
+- can we factor for less verbose parsing?
+  - parser combinators?
+  - registry of encoders/decoders?
+  - less strict typing, more optionals?
+  - profit?
+- separate generic RPC setup from specific handlers?
