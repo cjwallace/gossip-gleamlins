@@ -43,7 +43,7 @@ fn encode_echo_response(response: EchoResponse) {
 pub fn handler(request: messages.Request, state: Subject(node.Command)) {
   use request_body <- result.try(
     decode.run(request.body, echo_request_decoder())
-    |> result.map_error(fn(_) { "Invalid init request" }),
+    |> result.map_error(fn(_) { "Invalid echo request" }),
   )
 
   let node_id = actor.call(state, node.GetNodeId, 100)
