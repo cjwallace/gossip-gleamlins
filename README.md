@@ -5,19 +5,7 @@ This is me learning all of Maelstrom, Gleam, and distributed systems. Do not use
 
 ## Usage
 
-Build a `seastar` binary.
-
-```sh
-gleam build && gleam run -m gleescript
-```
-
-Run a maelstrom echo test, assuming both `maelstrom` and `seastar` are on the PATH (or point to them).
-
-```sh
-maelstrom test -w echo --bin seastar --time-limit 5
-```
-
-A justfile exists for convenience. Assuming maelstrom is untarred into the maelstrom directory, run the echo test with:
+Run a maelstrom echo test, assuming the `maelstrom` executable is at `maelstrom/maelstrom` relative to the root of this repo.
 
 ```sh
 just echo
@@ -26,11 +14,6 @@ just echo
 ## Notes
 
 Next up:
-- increment msg_id, which should also be optional
-- separate message parsing from message processing
-- can we factor for less verbose parsing?
-  - parser combinators?
-  - registry of encoders/decoders?
-  - less strict typing, more optionals?
-  - profit?
-- separate generic RPC setup from specific handlers?
+- tests
+- next challenge: unique id generation
+- spawn an actor per request
