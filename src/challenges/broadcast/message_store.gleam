@@ -31,7 +31,12 @@ pub fn new() {
 }
 
 pub fn add_message(messages: Subject(Command), message: Int) {
-  actor.send(messages, Add(message))
+  // Idempotency: message can be stored only once.
+  let current_messages = read_messages(messages)
+  case list.contains(current_messages, message) {
+    True -> Nil
+    False -> actor.send(messages, Add(message))
+  }
 }
 
 pub fn read_messages(messages: Subject(Command)) {

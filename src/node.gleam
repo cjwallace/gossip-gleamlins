@@ -20,6 +20,7 @@ pub type Command {
   SetTopology(topology: Dict(String, List(String)))
   GetNodeId(reply_with: Subject(String))
   GetNextMsgId(reply_with: Subject(Int))
+  GetNeighbours(reply_with: Subject(List(String)))
 }
 
 fn handler(command: Command, node: Node) {
@@ -41,6 +42,14 @@ fn handler(command: Command, node: Node) {
       process.send(reply_with, node.msg_counter)
       let updated_node = Node(..node, msg_counter: node.msg_counter + 1)
       actor.continue(updated_node)
+    }
+    GetNeighbours(reply_with) -> {
+      let neighbours = dict.get(node.topology, node.id)
+      case neighbours {
+        Ok(neighbours) -> process.send(reply_with, neighbours)
+        Error(_) -> process.send(reply_with, [])
+      }
+      actor.continue(node)
     }
   }
 }
@@ -77,4 +86,8 @@ pub fn set_topology(
   topology: Dict(String, List(String)),
 ) {
   actor.send(node_state, SetTopology(topology))
+}
+
+pub fn get_neighbours(node_state: Subject(Command)) {
+  actor.call(node_state, GetNeighbours, 100)
 }
