@@ -18,8 +18,14 @@ generate: build
     {{MAELSTROM}} test -w unique-ids --bin {{NODE}} generate --time-limit 30 --rate 1000 --node-count 3 --availability total --nemesis partition
     rm {{NODE}}
 
+broadcast: build
+    {{MAELSTROM}} test -w broadcast --bin {{NODE}} broadcast --node-count 1 --time-limit 20 --rate 10
+    rm {{NODE}}
+
 all: build
     @echo "Running maelstrom echo test"
     @just echo 2>/dev/null | tail -n 1
     @echo "Running maelstrom unique ID generation test"
     @just generate 2>/dev/null | tail -n 1
+    @echo "Running maelstrom broadcast test"
+    @just broadcast 2>/dev/null | tail -n 1
