@@ -1,8 +1,14 @@
+import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor
 
-type Node {
-  Node(id: String, all_node_ids: List(String), msg_counter: Int)
+pub type Node {
+  Node(
+    id: String,
+    all_node_ids: List(String),
+    msg_counter: Int,
+    topology: Dict(String, List(String)),
+  )
 }
 
 pub type Command {
@@ -11,6 +17,7 @@ pub type Command {
     node_id: String,
     all_node_ids: List(String),
   )
+  SetTopology(topology: Dict(String, List(String)))
   GetNodeId(reply_with: Subject(String))
   GetNextMsgId(reply_with: Subject(Int))
 }
@@ -18,10 +25,13 @@ pub type Command {
 fn handler(command: Command, node: Node) {
   case command {
     InitializeNode(reply_with, node_id, all_node_ids) -> {
-      let initialized_node =
-        Node(id: node_id, all_node_ids: all_node_ids, msg_counter: 0)
+      let initialized_node = Node(..node, id: node_id, all_node_ids:)
       process.send(reply_with, node.id)
       actor.continue(initialized_node)
+    }
+    SetTopology(topology) -> {
+      let new_node = Node(..node, topology:)
+      actor.continue(new_node)
     }
     GetNodeId(reply_with) -> {
       process.send(reply_with, node.id)
@@ -37,7 +47,10 @@ fn handler(command: Command, node: Node) {
 
 pub fn new() {
   let assert Ok(node) =
-    actor.start(Node(id: "", all_node_ids: [], msg_counter: 0), handler)
+    actor.start(
+      Node(id: "", all_node_ids: [], msg_counter: 0, topology: dict.new()),
+      handler,
+    )
   node
 }
 
@@ -57,4 +70,11 @@ pub fn get_node_id(node_state: Subject(Command)) {
 
 pub fn get_next_msg_id(node_state: Subject(Command)) {
   actor.call(node_state, GetNextMsgId, 100)
+}
+
+pub fn set_topology(
+  node_state: Subject(Command),
+  topology: Dict(String, List(String)),
+) {
+  actor.send(node_state, SetTopology(topology))
 }
