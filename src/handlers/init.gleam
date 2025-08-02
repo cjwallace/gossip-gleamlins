@@ -1,7 +1,6 @@
 import gleam/dynamic/decode
 import gleam/erlang/process.{type Subject}
 import gleam/json
-import gleam/otp/actor
 import gleam/result
 
 import messages
@@ -47,12 +46,14 @@ pub fn handler(request: messages.Request, node_state: Subject(node.Command)) {
     |> result.map_error(fn(_) { "Invalid init request" }),
   )
 
-  actor.send(
+  // Makes synchronous call to prevent race.
+  node.initialize_node(
     node_state,
-    node.InitializeNode(request_body.node_id, request_body.all_node_ids),
+    request_body.node_id,
+    request_body.all_node_ids,
   )
 
-  let msg_id = actor.call(node_state, node.GetNextMsgId, 100)
+  let msg_id = node.get_next_msg_id(node_state)
 
   let response_body =
     encode_init_response(InitResponse(

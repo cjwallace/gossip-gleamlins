@@ -2,7 +2,6 @@ import gleam/dynamic/decode
 import gleam/erlang/process.{type Subject}
 import gleam/int
 import gleam/json
-import gleam/otp/actor
 import gleam/result
 
 import messages
@@ -42,8 +41,8 @@ pub fn handler(request: messages.Request, state: Subject(node.Command)) {
     |> result.map_error(fn(_) { "Invalid generate request" }),
   )
 
-  let node_id = actor.call(state, node.GetNodeId, 100)
-  let msg_id = actor.call(state, node.GetNextMsgId, 100)
+  let node_id = node.get_node_id(state)
+  let msg_id = node.get_next_msg_id(state)
 
   let unique_id = node_id <> "-" <> int.to_string(msg_id)
 

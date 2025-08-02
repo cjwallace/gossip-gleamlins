@@ -1,5 +1,4 @@
 import gleam/dict
-import gleam/otp/actor
 
 import handlers/init
 import maelstrom
@@ -13,11 +12,7 @@ pub fn main() {
     |> dict.insert("init", init.handler)
     |> dict.insert("echo", echo_handler.handler)
 
-  let assert Ok(node_actor) =
-    actor.start(
-      node.Node(id: "", all_node_ids: [], msg_counter: 0),
-      node.handler,
-    )
+  let node_actor = node.new()
 
   maelstrom.run(handler_registry, node_actor)
 }
