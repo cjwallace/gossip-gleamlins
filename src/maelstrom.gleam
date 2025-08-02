@@ -1,12 +1,11 @@
 import gleam/erlang
-import gleam/erlang/process.{type Subject}
 import gleam/io
 import gleam/result
 
 import messages
 import registry
 
-pub fn run(handler_registry: registry.Registry(state), state: Subject(state)) {
+pub fn run(handler_registry: registry.Registry(state), state: state) {
   let assert Ok(line) = erlang.get_line("")
 
   use request <- result.try(
