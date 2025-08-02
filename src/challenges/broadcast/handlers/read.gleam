@@ -2,6 +2,7 @@ import gleam/dynamic/decode
 import gleam/json
 import gleam/result
 
+import maelstrom
 import messages
 import node
 
@@ -54,5 +55,5 @@ pub fn handler(request: messages.Request, state: state.BroadcastState) {
       messages: messages,
     ))
 
-  Ok(messages.Response(src: node_id, dest: request.src, body: response_body))
+  Ok(maelstrom.send(from: node_id, to: request.src, body: response_body))
 }

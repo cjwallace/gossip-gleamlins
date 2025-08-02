@@ -1,5 +1,7 @@
 import gleam/erlang
+import gleam/erlang/process
 import gleam/io
+import gleam/json
 import gleam/result
 
 import messages
@@ -18,10 +20,21 @@ pub fn run(handler_registry: registry.Registry(state), state: state) {
     |> result.map_error(fn(_) { "Could not extract message type" }),
   )
 
-  case registry.dispatch(handler_registry, message_type, request, state) {
-    Ok(response) -> messages.encode_response(response) |> io.println
-    Error(error) -> io.println_error("Unknown message type: {}" <> error)
-  }
+  process.start(
+    fn() {
+      case registry.dispatch(handler_registry, message_type, request, state) {
+        Ok(_) -> Nil
+        Error(error) -> io.println_error("Unknown message type: {}" <> error)
+      }
+    },
+    linked: False,
+  )
 
   run(handler_registry, state)
+}
+
+pub fn send(from src: String, to dest: String, body body: json.Json) {
+  let response = messages.Response(src:, dest:, body:)
+  messages.encode_response(response) |> io.println
+  Nil
 }
