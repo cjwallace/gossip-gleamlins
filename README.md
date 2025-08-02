@@ -5,15 +5,16 @@ This is me learning all of Maelstrom, Gleam, and distributed systems. Do not use
 
 ## Usage
 
-Run a maelstrom echo test, assuming the `maelstrom` executable is at `maelstrom/maelstrom` relative to the root of this repo.
+See the included justfile. With the maelstrom executable is at `maelstrom/maelstrom` relative to the root of this repo, each challenge can be run with:
 
 ```sh
-just echo
+just echo      # ... echo
+just generate  # unique per-node id generation
+just broadcast # single-node broadcast
 ```
 
 ## Notes
 
 Next up:
-- tests
-- next challenge: unique id generation
-- spawn an actor per request
+- spawn an actor per request?
+- tests!
