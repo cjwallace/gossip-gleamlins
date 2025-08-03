@@ -1,5 +1,4 @@
 import gleam/dict
-import gleam/io
 
 import handlers/init
 import handlers/topology
@@ -31,14 +30,9 @@ pub fn main() {
     |> dict.insert("broadcast", broadcast.handler)
     |> dict.insert("read", read.handler)
 
-  io.print_error("Registered handlers")
   let node_actor = node.new()
-  io.print_error("Started node")
   let messages = message_store.new()
-  io.print_error("Started message store")
-
   let state = state.BroadcastState(node: node_actor, messages: messages)
-  io.print_error("Defined state")
 
   maelstrom.run(handler_registry, state)
 }
