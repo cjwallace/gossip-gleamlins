@@ -1,9 +1,10 @@
 import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 
-import messages
+import messages.{type Message}
 
 pub type Handler(state) =
-  fn(messages.Request, state) -> Result(Nil, String)
+  fn(Message(Dynamic), state) -> Result(Nil, String)
 
 pub type Registry(state) =
   Dict(String, Handler(state))
@@ -15,7 +16,7 @@ pub type RequestMessage(body) {
 pub fn dispatch(
   registry: Registry(state),
   message_type: String,
-  request: messages.Request,
+  request: Message(Dynamic),
   state: state,
 ) -> Result(Nil, String) {
   case dict.get(registry, message_type) {

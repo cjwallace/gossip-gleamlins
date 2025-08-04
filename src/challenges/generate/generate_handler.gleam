@@ -1,3 +1,4 @@
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/erlang/process.{type Subject}
 import gleam/int
@@ -5,7 +6,7 @@ import gleam/json
 import gleam/result
 
 import maelstrom
-import messages
+import messages.{type Message}
 import node
 
 type GenerateRequest {
@@ -36,7 +37,7 @@ fn encode_generate_response(response: GenerateResponse) {
   ])
 }
 
-pub fn handler(request: messages.Request, state: Subject(node.Command)) {
+pub fn handler(request: Message(Dynamic), state: Subject(node.Command)) {
   use request_body <- result.try(
     decode.run(request.body, generate_request_decoder())
     |> result.map_error(fn(_) { "Invalid generate request" }),

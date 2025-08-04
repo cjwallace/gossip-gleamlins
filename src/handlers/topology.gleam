@@ -1,11 +1,12 @@
 import gleam/dict
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/result
 import maelstrom
 
-import messages
+import messages.{type Message}
 import node
 
 type TopologyRequest {
@@ -38,7 +39,7 @@ fn encode_topology_response(response: TopologyResponse) -> json.Json {
   ])
 }
 
-pub fn handler(request: messages.Request, node_state: Subject(node.Command)) {
+pub fn handler(request: Message(Dynamic), node_state: Subject(node.Command)) {
   use request_body <- result.try(
     decode.run(request.body, topology_request_decoder())
     |> result.map_error(fn(_) { "Invalid topology request" }),

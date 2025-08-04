@@ -11,7 +11,7 @@ pub fn run(handler_registry: registry.Registry(state), state: state) {
   let assert Ok(line) = erlang.get_line("")
 
   use request <- result.try(
-    messages.decode_request(line)
+    messages.decode_message(line)
     |> result.map_error(fn(_) { "Could not decode request" }),
   )
 
@@ -34,7 +34,7 @@ pub fn run(handler_registry: registry.Registry(state), state: state) {
 }
 
 pub fn send(from src: String, to dest: String, body body: json.Json) {
-  let response = messages.Response(src:, dest:, body:)
-  messages.encode_response(response) |> io.println
+  let response = messages.Message(src:, dest:, body:)
+  messages.encode_message(response) |> io.println
   Nil
 }

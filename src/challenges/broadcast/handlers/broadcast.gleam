@@ -1,3 +1,4 @@
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/list
 
@@ -5,7 +6,7 @@ import gleam/json
 import gleam/result
 
 import maelstrom
-import messages
+import messages.{type Message}
 import node
 
 import challenges/broadcast/message_store
@@ -43,7 +44,7 @@ fn encode_broadcast_response(response: BroadcastResponse) -> json.Json {
   ])
 }
 
-pub fn handler(request: messages.Request, state: state.BroadcastState) {
+pub fn handler(request: Message(Dynamic), state: state.BroadcastState) {
   use request_body <- result.try(
     decode.run(request.body, broadcast_request_decoder())
     |> result.map_error(fn(_) { "Invalid broadcast request" }),
