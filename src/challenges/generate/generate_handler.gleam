@@ -1,13 +1,13 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
-import gleam/erlang/process.{type Subject}
 import gleam/int
 import gleam/json
 import gleam/result
 
-import maelstrom
+import context.{type Context}
 import messages.{type Message}
 import node
+import rpc_manager
 
 type GenerateRequest {
   GenerateRequest(message_type: String, msg_id: Int)
@@ -37,14 +37,14 @@ fn encode_generate_response(response: GenerateResponse) {
   ])
 }
 
-pub fn handler(request: Message(Dynamic), state: Subject(node.Command)) {
+pub fn handler(ctx: Context(state), request: Message(Dynamic)) {
   use request_body <- result.try(
     decode.run(request.body, generate_request_decoder())
     |> result.map_error(fn(_) { "Invalid generate request" }),
   )
 
-  let node_id = node.get_node_id(state)
-  let msg_id = node.get_next_msg_id(state)
+  let node_id = node.get_node_id(ctx.node)
+  let msg_id = node.get_next_msg_id(ctx.node)
 
   let unique_id = node_id <> "-" <> int.to_string(msg_id)
 
@@ -56,5 +56,8 @@ pub fn handler(request: Message(Dynamic), state: Subject(node.Command)) {
       in_reply_to: request_body.msg_id,
     ))
 
-  Ok(maelstrom.send(from: node_id, to: request.src, body: response_body))
+  let response =
+    messages.Message(src: node_id, dest: request.src, body: response_body)
+  rpc_manager.send_once(ctx.manager, response)
+  Ok(Nil)
 }

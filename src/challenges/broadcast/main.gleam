@@ -1,38 +1,36 @@
 import gleam/dict
+import gleam/erlang/process.{type Subject}
 
+import context.{type Context}
 import handlers/init
 import handlers/topology
 import maelstrom
 import node
+import rpc_manager
 
 import challenges/broadcast/handlers/broadcast
 import challenges/broadcast/handlers/read
 import challenges/broadcast/message_store
-import challenges/broadcast/state
 
-// The generic "init" handler is for all challenges, and expects Subject(node.Command)
-// as its second argument. This challenge has richer state, so we wrap the init handler
-// such that our handler function signatures are homogeneous.
-fn init_handler(req, state: state.BroadcastState) {
-  init.handler(req, state.node)
-}
-
-// Likewise to init
-fn topology_handler(req, state: state.BroadcastState) {
-  topology.handler(req, state.node)
+// The ok handler removes messages from the retry registry
+fn ok_handler(ctx: Context(Subject(message_store.Command)), message) {
+  rpc_manager.receive(ctx.manager, message)
 }
 
 pub fn main() {
   let handler_registry =
     dict.new()
-    |> dict.insert("init", init_handler)
-    |> dict.insert("topology", topology_handler)
+    |> dict.insert("init", init.handler)
+    |> dict.insert("topology", topology.handler)
     |> dict.insert("broadcast", broadcast.handler)
     |> dict.insert("read", read.handler)
+    |> dict.insert("broadcast_ok", ok_handler)
 
   let node_actor = node.new()
+  let manager = rpc_manager.new()
   let messages = message_store.new()
-  let state = state.BroadcastState(node: node_actor, messages: messages)
+  let context =
+    context.Context(node: node_actor, state: messages, manager: manager)
 
-  maelstrom.run(handler_registry, state)
+  maelstrom.run(context, handler_registry)
 }

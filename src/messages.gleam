@@ -2,10 +2,6 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json.{type Json}
 
-pub type Response {
-  Response(src: String, dest: String, body: Json)
-}
-
 pub type Message(body) {
   Message(src: String, dest: String, body: body)
 }

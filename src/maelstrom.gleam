@@ -4,10 +4,11 @@ import gleam/io
 import gleam/json
 import gleam/result
 
+import context.{type Context}
 import messages
 import registry
 
-pub fn run(handler_registry: registry.Registry(state), state: state) {
+pub fn run(ctx: Context(state), handler_registry: registry.Registry(state)) {
   let assert Ok(line) = erlang.get_line("")
 
   use request <- result.try(
@@ -22,7 +23,7 @@ pub fn run(handler_registry: registry.Registry(state), state: state) {
 
   process.start(
     fn() {
-      case registry.dispatch(handler_registry, message_type, request, state) {
+      case registry.dispatch(ctx, handler_registry, message_type, request) {
         Ok(_) -> Nil
         Error(error) -> io.println_error("Unknown message type: {}" <> error)
       }
@@ -30,7 +31,7 @@ pub fn run(handler_registry: registry.Registry(state), state: state) {
     linked: False,
   )
 
-  run(handler_registry, state)
+  run(ctx, handler_registry)
 }
 
 pub fn send(from src: String, to dest: String, body body: json.Json) {

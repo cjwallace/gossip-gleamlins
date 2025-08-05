@@ -1,14 +1,15 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
+import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/result
 
-import maelstrom
+import context.{type Context}
 import messages.{type Message}
 import node
+import rpc_manager
 
 import challenges/broadcast/message_store
-import challenges/broadcast/state
 
 type ReadRequest {
   ReadRequest(message_type: String, msg_id: Int)
@@ -38,15 +39,18 @@ fn encode_read_response(response: ReadResponse) -> json.Json {
   ])
 }
 
-pub fn handler(request: Message(Dynamic), state: state.BroadcastState) {
+pub fn handler(
+  ctx: Context(Subject(message_store.Command)),
+  message: Message(Dynamic),
+) {
   use request_body <- result.try(
-    decode.run(request.body, read_request_decoder())
+    decode.run(message.body, read_request_decoder())
     |> result.map_error(fn(_) { "Invalid read request" }),
   )
 
-  let node_id = node.get_node_id(state.node)
-  let msg_id = node.get_next_msg_id(state.node)
-  let messages = message_store.read_messages(state.messages)
+  let node_id = node.get_node_id(ctx.node)
+  let msg_id = node.get_next_msg_id(ctx.node)
+  let messages = message_store.read_messages(ctx.state)
 
   let response_body =
     encode_read_response(ReadResponse(
@@ -56,5 +60,9 @@ pub fn handler(request: Message(Dynamic), state: state.BroadcastState) {
       messages: messages,
     ))
 
-  Ok(maelstrom.send(from: node_id, to: request.src, body: response_body))
+  let response =
+    messages.Message(src: node_id, dest: message.src, body: response_body)
+
+  rpc_manager.send_once(ctx.manager, response)
+  Ok(Nil)
 }

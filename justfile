@@ -19,7 +19,7 @@ generate: build
     rm {{NODE}}
 
 broadcast: build
-    {{MAELSTROM}} test -w broadcast --bin {{NODE}} broadcast --node-count 5 --time-limit 20 --rate 10
+    {{MAELSTROM}} test -w broadcast --bin {{NODE}} broadcast --node-count 5 --time-limit 20 --rate 10 --nemesis partition
     rm {{NODE}}
 
 all: build

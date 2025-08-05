@@ -1,11 +1,11 @@
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
-import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/result
-import maelstrom
+import rpc_manager
 
+import context.{type Context}
 import messages.{type Message}
 import node
 
@@ -39,16 +39,16 @@ fn encode_topology_response(response: TopologyResponse) -> json.Json {
   ])
 }
 
-pub fn handler(request: Message(Dynamic), node_state: Subject(node.Command)) {
+pub fn handler(ctx: Context(state), message: Message(Dynamic)) {
   use request_body <- result.try(
-    decode.run(request.body, topology_request_decoder())
+    decode.run(message.body, topology_request_decoder())
     |> result.map_error(fn(_) { "Invalid topology request" }),
   )
 
-  node.set_topology(node_state, request_body.topology)
+  node.set_topology(ctx.node, request_body.topology)
 
-  let node_id = node.get_node_id(node_state)
-  let msg_id = node.get_next_msg_id(node_state)
+  let node_id = node.get_node_id(ctx.node)
+  let msg_id = node.get_next_msg_id(ctx.node)
 
   let response_body =
     encode_topology_response(TopologyResponse(
@@ -57,5 +57,8 @@ pub fn handler(request: Message(Dynamic), node_state: Subject(node.Command)) {
       in_reply_to: request_body.msg_id,
     ))
 
-  Ok(maelstrom.send(from: node_id, to: request.src, body: response_body))
+  let response =
+    messages.Message(src: node_id, dest: message.src, body: response_body)
+
+  Ok(rpc_manager.send_once(ctx.manager, response))
 }

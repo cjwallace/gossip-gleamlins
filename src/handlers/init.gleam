@@ -1,10 +1,10 @@
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
-import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/result
+import rpc_manager
 
-import maelstrom
+import context
 import messages.{type Message}
 import node
 
@@ -42,7 +42,7 @@ fn encode_init_response(response: InitResponse) {
   ])
 }
 
-pub fn handler(request: Message(Dynamic), node_state: Subject(node.Command)) {
+pub fn handler(ctx: context.Context(state), request: Message(Dynamic)) {
   use request_body <- result.try(
     decode.run(request.body, init_request_decoder())
     |> result.map_error(fn(_) { "Invalid init request" }),
@@ -50,12 +50,12 @@ pub fn handler(request: Message(Dynamic), node_state: Subject(node.Command)) {
 
   // Makes synchronous call to prevent race.
   node.initialize_node(
-    node_state,
+    ctx.node,
     request_body.node_id,
     request_body.all_node_ids,
   )
 
-  let msg_id = node.get_next_msg_id(node_state)
+  let msg_id = node.get_next_msg_id(ctx.node)
 
   let response_body =
     encode_init_response(InitResponse(
@@ -64,9 +64,12 @@ pub fn handler(request: Message(Dynamic), node_state: Subject(node.Command)) {
       in_reply_to: request_body.msg_id,
     ))
 
-  Ok(maelstrom.send(
-    from: request_body.node_id,
-    to: request.src,
-    body: response_body,
-  ))
+  let response =
+    messages.Message(
+      src: request_body.node_id,
+      dest: request.src,
+      body: response_body,
+    )
+  rpc_manager.send_once(ctx.manager, response)
+  Ok(Nil)
 }
