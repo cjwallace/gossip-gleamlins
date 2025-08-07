@@ -13,7 +13,7 @@ import challenges/broadcast/message_store
 
 // The ok handler removes messages from the retry registry
 fn ok_handler(ctx: Context(Subject(message_store.Command)), message) {
-  rpc_manager.receive(ctx.manager, message)
+  rpc_manager.cancel_retry(ctx.manager, message)
 }
 
 pub fn main() {

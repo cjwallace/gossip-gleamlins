@@ -19,7 +19,7 @@ pub type Manager {
 pub type Command {
   SendOnce(request: Message(Json))
   SendWithRetry(reply_with: Subject(Command), request: Message(Json))
-  Receive(request: Message(Dynamic))
+  CancelRetry(request: Message(Dynamic))
 }
 
 pub fn handler(command: Command, manager: Manager) {
@@ -47,7 +47,7 @@ pub fn handler(command: Command, manager: Manager) {
         Error(_) -> actor.continue(manager)
       }
     }
-    Receive(request) -> {
+    CancelRetry(request) -> {
       let msg_id = messages.get_in_reply_to(request.body)
       case msg_id {
         Ok(id) -> handle_reply(manager, id) |> actor.continue
@@ -119,6 +119,6 @@ pub fn send_with_retry(manager: Subject(Command), request) {
   actor.send(manager, SendWithRetry(manager, request))
 }
 
-pub fn receive(manager: Subject(Command), response) {
-  Ok(actor.send(manager, Receive(response)))
+pub fn cancel_retry(manager: Subject(Command), response) {
+  Ok(actor.send(manager, CancelRetry(response)))
 }
