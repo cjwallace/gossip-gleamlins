@@ -13,3 +13,13 @@ pub type Context(state) {
     state: state,
   )
 }
+
+pub fn new() {
+  let node = node.new()
+  let manager = rpc_manager.new()
+  Context(node: node, manager: manager, state: Nil)
+}
+
+pub fn set_state(context: Context(_), new_state: state) {
+  Context(node: context.node, manager: context.manager, state: new_state)
+}

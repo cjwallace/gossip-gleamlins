@@ -5,7 +5,6 @@ import context.{type Context}
 import handlers/init
 import handlers/topology
 import maelstrom
-import node
 import rpc_manager
 
 import challenges/broadcast/handlers/broadcast
@@ -26,11 +25,8 @@ pub fn main() {
     |> dict.insert("read", read.handler)
     |> dict.insert("broadcast_ok", ok_handler)
 
-  let node_actor = node.new()
-  let manager = rpc_manager.new()
   let messages = message_store.new()
-  let context =
-    context.Context(node: node_actor, state: messages, manager: manager)
+  let context = context.new() |> context.set_state(messages)
 
   maelstrom.run(context, handler_registry)
 }
