@@ -9,11 +9,14 @@ import gleam/otp/actor
 
 import messages.{type Message}
 
+// (Destination node ID, message ID)
+type PendingMessageId =
+  #(String, Int)
+
 pub type Manager {
   Manager(
-    // Requests are identified by (destination node ID, message ID)
-    pending_requests: Dict(#(String, Int), Message(Json)),
-    completed_requests: List(#(String, Int)),
+    pending_requests: Dict(PendingMessageId, Message(Json)),
+    completed_requests: List(PendingMessageId),
   )
 }
 
@@ -40,14 +43,15 @@ pub fn handler(command: Command, manager: Manager) {
       let msg_id = messages.get_msg_id_from_json(message.body)
       case msg_id {
         Ok(msg_id) -> {
-          let request_id = #(message.dest, msg_id)
-          case is_request_completed(manager, request_id) {
+          let pending_message_id = #(message.dest, msg_id)
+          case is_request_completed(manager, pending_message_id) {
             True -> actor.continue(manager)
             False -> {
               retry(message, reply_with)
-              case is_request_pending(manager, request_id) {
+              case is_request_pending(manager, pending_message_id) {
                 True -> manager
-                False -> create_pending_request(manager, request_id, message)
+                False ->
+                  create_pending_request(manager, pending_message_id, message)
               }
               |> actor.continue
             }
@@ -60,8 +64,8 @@ pub fn handler(command: Command, manager: Manager) {
       let msg_id = messages.get_in_reply_to(request.body)
       case msg_id {
         Ok(id) -> {
-          let request_id = #(request.src, id)
-          handle_reply(manager, request_id) |> actor.continue
+          let pending_message_id = #(request.src, id)
+          handle_reply(manager, pending_message_id) |> actor.continue
         }
         Error(_) -> actor.continue(manager)
       }
@@ -87,36 +91,45 @@ fn retry(message: Message(Json), reply_with: Subject(Command)) {
   )
 }
 
-fn is_request_completed(manager: Manager, request_id: #(String, Int)) {
-  list.contains(manager.completed_requests, request_id)
+fn is_request_completed(manager: Manager, pending_message_id: PendingMessageId) {
+  list.contains(manager.completed_requests, pending_message_id)
 }
 
-fn mark_request_completed(manager: Manager, request_id: #(String, Int)) {
+fn mark_request_completed(
+  manager: Manager,
+  pending_message_id: PendingMessageId,
+) {
   Manager(
-    pending_requests: dict.drop(manager.pending_requests, [request_id]),
-    completed_requests: list.append(manager.completed_requests, [request_id]),
+    pending_requests: dict.drop(manager.pending_requests, [pending_message_id]),
+    completed_requests: list.append(manager.completed_requests, [
+      pending_message_id,
+    ]),
   )
 }
 
-fn handle_reply(manager: Manager, request_id: #(String, Int)) {
-  case is_request_completed(manager, request_id) {
+fn handle_reply(manager: Manager, pending_message_id: PendingMessageId) {
+  case is_request_completed(manager, pending_message_id) {
     True -> manager
-    False -> mark_request_completed(manager, request_id)
+    False -> mark_request_completed(manager, pending_message_id)
   }
 }
 
-fn is_request_pending(manager: Manager, request_id: #(String, Int)) {
-  dict.has_key(manager.pending_requests, request_id)
+fn is_request_pending(manager: Manager, pending_message_id: PendingMessageId) {
+  dict.has_key(manager.pending_requests, pending_message_id)
 }
 
 fn create_pending_request(
   manager: Manager,
-  request_id: #(String, Int),
+  pending_message_id: PendingMessageId,
   message: Message(Json),
 ) {
   Manager(
     ..manager,
-    pending_requests: dict.insert(manager.pending_requests, request_id, message),
+    pending_requests: dict.insert(
+      manager.pending_requests,
+      pending_message_id,
+      message,
+    ),
   )
 }
 
