@@ -42,3 +42,8 @@ pub fn add_message(messages: Subject(Command), message: Int) {
 pub fn read_messages(messages: Subject(Command)) {
   actor.call(messages, Read, 100)
 }
+
+pub fn is_new_message(messages: Subject(Command), message: Int) {
+  let current_messages = read_messages(messages)
+  !list.contains(current_messages, message)
+}

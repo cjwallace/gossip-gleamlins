@@ -22,6 +22,10 @@ broadcast: build
     {{MAELSTROM}} test -w broadcast --bin {{NODE}} broadcast --node-count 5 --time-limit 20 --rate 10 --nemesis partition
     rm {{NODE}}
 
+efficient-broadcast: build
+    {{MAELSTROM}} test -w broadcast --bin {{NODE}} broadcast --node-count 25 --time-limit 20 --rate 100 --latency 100 --topology tree4
+    rm {{NODE}}
+
 all: build
     @echo "Running maelstrom echo test"
     @just echo 2>/dev/null | tail -n 1

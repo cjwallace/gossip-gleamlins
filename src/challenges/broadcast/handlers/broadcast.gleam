@@ -55,7 +55,8 @@ pub fn handler(
   let node_id = node.get_node_id(ctx.node)
   let msg_id = node.get_next_msg_id(ctx.node)
 
-  message_store.add_message(ctx.state, request_body.message)
+  let is_new_message =
+    message_store.is_new_message(ctx.state, request_body.message)
 
   let response_body =
     encode_broadcast_response(BroadcastResponse(
@@ -69,24 +70,32 @@ pub fn handler(
     messages.Message(src: node_id, dest: request.src, body: response_body),
   )
 
-  let neighbours = node.get_neighbours(ctx.node)
+  // Do not broadcast message to neighbours if it has been seen before
+  case is_new_message {
+    True -> {
+      message_store.add_message(ctx.state, request_body.message)
 
-  // Send message to all neighbours except sender
-  neighbours
-  |> list.filter(fn(n) { n != request.src })
-  |> list.map(fn(n) {
-    let msg_id = node.get_next_msg_id(ctx.node)
-    let request_body =
-      encode_broadcast_request(BroadcastRequest(
-        message_type: "broadcast",
-        msg_id: msg_id,
-        message: request_body.message,
-      ))
-    rpc_manager.send_with_retry(
-      ctx.manager,
-      messages.Message(src: node_id, dest: n, body: request_body),
-    )
-  })
+      let neighbours = node.get_neighbours(ctx.node)
+
+      // Send message to all neighbours except sender
+      neighbours
+      |> list.filter(fn(n) { n != request.src })
+      |> list.map(fn(n) {
+        let msg_id = node.get_next_msg_id(ctx.node)
+        let request_body =
+          encode_broadcast_request(BroadcastRequest(
+            message_type: "broadcast",
+            msg_id: msg_id,
+            message: request_body.message,
+          ))
+        rpc_manager.send_with_retry(
+          ctx.manager,
+          messages.Message(src: node_id, dest: n, body: request_body),
+        )
+      })
+    }
+    False -> []
+  }
 
   Ok(Nil)
 }

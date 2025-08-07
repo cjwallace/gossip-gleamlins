@@ -27,7 +27,7 @@ fn handler(command: Command, node: Node) {
   case command {
     InitializeNode(reply_with, node_id, all_node_ids) -> {
       let initialized_node = Node(..node, id: node_id, all_node_ids:)
-      process.send(reply_with, node.id)
+      process.send(reply_with, initialized_node.id)
       actor.continue(initialized_node)
     }
     SetTopology(topology) -> {

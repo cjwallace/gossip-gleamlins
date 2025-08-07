@@ -1,5 +1,4 @@
 import gleam/erlang
-import gleam/erlang/process
 import gleam/io
 import gleam/result
 
@@ -20,15 +19,12 @@ pub fn run(ctx: Context(state), handler_registry: registry.Registry(state)) {
     |> result.map_error(fn(_) { "Could not extract message type" }),
   )
 
-  process.start(
-    fn() {
-      case registry.dispatch(ctx, handler_registry, message_type, request) {
-        Ok(_) -> Nil
-        Error(error) -> io.println_error("Unknown message type: {}" <> error)
-      }
-    },
-    linked: False,
-  )
+  // Dispatch synchronously (ensures, eg, node initialization has
+  // completed before handling additional requests).
+  case registry.dispatch(ctx, handler_registry, message_type, request) {
+    Ok(_) -> Nil
+    Error(error) -> io.println_error("Unknown message type: {}" <> error)
+  }
 
   run(ctx, handler_registry)
 }

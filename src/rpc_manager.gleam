@@ -11,8 +11,9 @@ import messages.{type Message}
 
 pub type Manager {
   Manager(
-    pending_requests: Dict(Int, Message(Json)),
-    completed_requests: List(Int),
+    // Requests are identified by (destination node ID, message ID)
+    pending_requests: Dict(#(String, Int), Message(Json)),
+    completed_requests: List(#(String, Int)),
   )
 }
 
@@ -29,16 +30,24 @@ pub fn handler(command: Command, manager: Manager) {
       actor.continue(manager)
     }
     SendWithRetry(reply_with, message) -> {
+      io.println_error(
+        "RPC pending="
+        <> int.to_string(dict.size(manager.pending_requests))
+        <> " completed="
+        <> int.to_string(list.length(manager.completed_requests)),
+      )
+
       let msg_id = messages.get_msg_id_from_json(message.body)
       case msg_id {
         Ok(msg_id) -> {
-          case is_request_completed(manager, msg_id) {
+          let request_id = #(message.dest, msg_id)
+          case is_request_completed(manager, request_id) {
             True -> actor.continue(manager)
             False -> {
               retry(message, reply_with)
-              case is_request_pending(manager, msg_id) {
+              case is_request_pending(manager, request_id) {
                 True -> manager
-                False -> create_pending_request(manager, msg_id, message)
+                False -> create_pending_request(manager, request_id, message)
               }
               |> actor.continue
             }
@@ -50,7 +59,10 @@ pub fn handler(command: Command, manager: Manager) {
     CancelRetry(request) -> {
       let msg_id = messages.get_in_reply_to(request.body)
       case msg_id {
-        Ok(id) -> handle_reply(manager, id) |> actor.continue
+        Ok(id) -> {
+          let request_id = #(request.src, id)
+          handle_reply(manager, request_id) |> actor.continue
+        }
         Error(_) -> actor.continue(manager)
       }
     }
@@ -58,7 +70,10 @@ pub fn handler(command: Command, manager: Manager) {
 }
 
 fn send(message: Message(Json)) {
-  messages.encode_message(message) |> io.println
+  process.start(
+    fn() { messages.encode_message(message) |> io.println },
+    linked: False,
+  )
 }
 
 fn retry(message: Message(Json), reply_with: Subject(Command)) {
@@ -72,37 +87,41 @@ fn retry(message: Message(Json), reply_with: Subject(Command)) {
   )
 }
 
-fn is_request_completed(manager: Manager, msg_id: Int) {
-  list.contains(manager.completed_requests, msg_id)
+fn is_request_completed(manager: Manager, request_id: #(String, Int)) {
+  list.contains(manager.completed_requests, request_id)
 }
 
-fn mark_request_completed(manager: Manager, msg_id: Int) {
+fn mark_request_completed(manager: Manager, request_id: #(String, Int)) {
   Manager(
-    pending_requests: dict.drop(manager.pending_requests, [msg_id]),
-    completed_requests: list.append(manager.completed_requests, [msg_id]),
+    pending_requests: dict.drop(manager.pending_requests, [request_id]),
+    completed_requests: list.append(manager.completed_requests, [request_id]),
   )
 }
 
-fn handle_reply(manager: Manager, msg_id: Int) {
-  case is_request_completed(manager, msg_id) {
+fn handle_reply(manager: Manager, request_id: #(String, Int)) {
+  case is_request_completed(manager, request_id) {
     True -> manager
-    False -> mark_request_completed(manager, msg_id)
+    False -> mark_request_completed(manager, request_id)
   }
 }
 
-fn is_request_pending(manager: Manager, msg_id: Int) {
-  dict.has_key(manager.pending_requests, msg_id)
+fn is_request_pending(manager: Manager, request_id: #(String, Int)) {
+  dict.has_key(manager.pending_requests, request_id)
 }
 
-fn create_pending_request(manager: Manager, msg_id: Int, message: Message(Json)) {
+fn create_pending_request(
+  manager: Manager,
+  request_id: #(String, Int),
+  message: Message(Json),
+) {
   Manager(
     ..manager,
-    pending_requests: dict.insert(manager.pending_requests, msg_id, message),
+    pending_requests: dict.insert(manager.pending_requests, request_id, message),
   )
 }
 
 fn jitter() {
-  100 + int.random(100)
+  400 + int.random(100)
 }
 
 pub fn new() {
