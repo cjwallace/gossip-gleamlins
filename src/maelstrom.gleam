@@ -1,7 +1,6 @@
 import gleam/erlang
 import gleam/erlang/process
 import gleam/io
-import gleam/json
 import gleam/result
 
 import context.{type Context}
@@ -32,10 +31,4 @@ pub fn run(ctx: Context(state), handler_registry: registry.Registry(state)) {
   )
 
   run(ctx, handler_registry)
-}
-
-pub fn send(from src: String, to dest: String, body body: json.Json) {
-  let response = messages.Message(src:, dest:, body:)
-  messages.encode_message(response) |> io.println
-  Nil
 }
