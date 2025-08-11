@@ -2,11 +2,11 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/result
-import rpc_manager
+import maelstrom/rpc_client
 
-import context
-import messages.{type Message}
-import node
+import maelstrom/context.{type Context}
+import maelstrom/node
+import maelstrom/protocol.{type Message}
 
 type InitRequest {
   InitRequest(
@@ -42,7 +42,7 @@ fn encode_init_response(response: InitResponse) {
   ])
 }
 
-pub fn handler(ctx: context.Context(state), request: Message(Dynamic)) {
+pub fn handler(ctx: Context(state), request: Message(Dynamic)) {
   use request_body <- result.try(
     decode.run(request.body, init_request_decoder())
     |> result.map_error(fn(_) { "Invalid init request" }),
@@ -65,11 +65,11 @@ pub fn handler(ctx: context.Context(state), request: Message(Dynamic)) {
     ))
 
   let response =
-    messages.Message(
+    protocol.Message(
       src: request_body.node_id,
       dest: request.src,
       body: response_body,
     )
-  rpc_manager.send_once(ctx.manager, response)
+  rpc_client.send_once(ctx.rpc_client, response)
   Ok(Nil)
 }

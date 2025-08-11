@@ -1,11 +1,11 @@
 import gleam/dict
 import gleam/erlang/process.{type Subject}
 
-import context.{type Context}
 import handlers/init
 import handlers/topology
-import maelstrom
-import rpc_manager
+import maelstrom/context.{type Context}
+import maelstrom/rpc_client
+import maelstrom/rpc_server
 
 import challenges/broadcast/handlers/broadcast
 import challenges/broadcast/handlers/read
@@ -13,7 +13,7 @@ import challenges/broadcast/message_store
 
 // The ok handler removes messages from the retry registry
 fn ok_handler(ctx: Context(Subject(message_store.Command)), message) {
-  rpc_manager.cancel_retry(ctx.manager, message)
+  rpc_client.cancel_retry(ctx.rpc_client, message)
 }
 
 pub fn main() {
@@ -28,5 +28,5 @@ pub fn main() {
   let messages = message_store.new()
   let context = context.new() |> context.set_state(messages)
 
-  maelstrom.run(context, handler_registry)
+  rpc_server.start(context, handler_registry)
 }

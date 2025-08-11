@@ -1,8 +1,8 @@
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 
-import context.{type Context}
-import messages.{type Message}
+import maelstrom/context.{type Context}
+import maelstrom/protocol.{type Message}
 
 pub type Handler(state) =
   fn(Context(state), Message(Dynamic)) -> Result(Nil, String)

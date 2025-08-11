@@ -4,10 +4,10 @@ import gleam/int
 import gleam/json
 import gleam/result
 
-import context.{type Context}
-import messages.{type Message}
-import node
-import rpc_manager
+import maelstrom/context.{type Context}
+import maelstrom/node
+import maelstrom/protocol.{type Message}
+import maelstrom/rpc_client
 
 type GenerateRequest {
   GenerateRequest(message_type: String, msg_id: Int)
@@ -57,7 +57,7 @@ pub fn handler(ctx: Context(state), request: Message(Dynamic)) {
     ))
 
   let response =
-    messages.Message(src: node_id, dest: request.src, body: response_body)
-  rpc_manager.send_once(ctx.manager, response)
+    protocol.Message(src: node_id, dest: request.src, body: response_body)
+  rpc_client.send_once(ctx.rpc_client, response)
   Ok(Nil)
 }

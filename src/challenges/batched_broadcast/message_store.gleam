@@ -54,30 +54,30 @@ pub fn new() {
   messages
 }
 
-pub fn add_message(messages: Subject(Command), message: Int) {
-  let current_messages = read_messages(messages)
+pub fn add_message(store: Subject(Command), message: Int) {
+  let current_messages = read_messages(store)
   case list.contains(current_messages, message) {
     True -> Nil
-    False -> actor.send(messages, Add([message]))
+    False -> actor.send(store, Add([message]))
   }
 }
 
-pub fn add_messages(messages: Subject(Command), new_messages: List(Int)) {
-  let current_messages = read_messages(messages)
+pub fn add_messages(store: Subject(Command), new_messages: List(Int)) {
+  let current_messages = read_messages(store)
 
   // Do not insert a message if it is already stored
   let deduplicated_messages =
     set.difference(set.from_list(new_messages), set.from_list(current_messages))
     |> set.to_list
-  actor.send(messages, Add(deduplicated_messages))
+  actor.send(store, Add(deduplicated_messages))
 }
 
-pub fn enqueue_message(messages: Subject(Command), message: Int) {
-  actor.send(messages, Enqueue([message]))
+pub fn enqueue_message(store: Subject(Command), message: Int) {
+  actor.send(store, Enqueue([message]))
 }
 
-pub fn enqueue_messages(messages: Subject(Command), new_messages: List(Int)) {
-  let current_messages = read_messages(messages)
+pub fn enqueue_messages(store: Subject(Command), new_messages: List(Int)) {
+  let current_messages = read_messages(store)
 
   let deduplicated_messages =
     set.difference(set.from_list(new_messages), set.from_list(current_messages))
@@ -85,23 +85,18 @@ pub fn enqueue_messages(messages: Subject(Command), new_messages: List(Int)) {
 
   case deduplicated_messages {
     [] -> Nil
-    _ -> actor.send(messages, Enqueue(deduplicated_messages))
+    _ -> actor.send(store, Enqueue(deduplicated_messages))
   }
 }
 
-pub fn read_queue(messages: Subject(Command)) {
-  actor.call(messages, Read, 100)
+pub fn read_queue(store: Subject(Command)) {
+  actor.call(store, Read, 100)
 }
 
-pub fn clear_queue(messages: Subject(Command)) {
-  actor.send(messages, ClearQueue)
+pub fn clear_queue(store: Subject(Command)) {
+  actor.send(store, ClearQueue)
 }
 
-pub fn read_messages(messages: Subject(Command)) {
-  actor.call(messages, Read, 100)
-}
-
-pub fn is_new_message(messages: Subject(Command), message: Int) {
-  let current_messages = read_messages(messages)
-  !list.contains(current_messages, message)
+pub fn read_messages(store: Subject(Command)) {
+  actor.call(store, Read, 100)
 }

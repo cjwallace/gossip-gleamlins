@@ -1,3 +1,6 @@
+// RPC client, for sending RPC requests.
+// Includes retry logic.
+
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}
@@ -7,13 +10,13 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/otp/actor
 
-import messages.{type Message}
+import maelstrom/protocol.{type Message}
 
 // (Destination node ID, message ID)
 type PendingMessageId =
   #(String, Int)
 
-pub type Manager {
+pub type RpcClient {
   Manager(
     pending_requests: Dict(PendingMessageId, Message(Json)),
     completed_requests: List(PendingMessageId),
@@ -26,7 +29,7 @@ pub type Command {
   CancelRetry(request: Message(Dynamic))
 }
 
-pub fn handler(command: Command, manager: Manager) {
+pub fn handler(command: Command, manager: RpcClient) {
   case command {
     SendOnce(message) -> {
       send(message)
@@ -40,7 +43,7 @@ pub fn handler(command: Command, manager: Manager) {
         <> int.to_string(list.length(manager.completed_requests)),
       )
 
-      let msg_id = messages.get_msg_id_from_json(message.body)
+      let msg_id = protocol.get_msg_id_from_json(message.body)
       case msg_id {
         Ok(msg_id) -> {
           let pending_message_id = #(message.dest, msg_id)
@@ -61,7 +64,7 @@ pub fn handler(command: Command, manager: Manager) {
       }
     }
     CancelRetry(request) -> {
-      let msg_id = messages.get_in_reply_to(request.body)
+      let msg_id = protocol.get_in_reply_to(request.body)
       case msg_id {
         Ok(id) -> {
           let pending_message_id = #(request.src, id)
@@ -75,7 +78,7 @@ pub fn handler(command: Command, manager: Manager) {
 
 fn send(message: Message(Json)) {
   process.start(
-    fn() { messages.encode_message(message) |> io.println },
+    fn() { protocol.encode_message(message) |> io.println },
     linked: True,
   )
 }
@@ -91,12 +94,15 @@ fn retry(message: Message(Json), reply_with: Subject(Command)) {
   )
 }
 
-fn is_request_completed(manager: Manager, pending_message_id: PendingMessageId) {
+fn is_request_completed(
+  manager: RpcClient,
+  pending_message_id: PendingMessageId,
+) {
   list.contains(manager.completed_requests, pending_message_id)
 }
 
 fn mark_request_completed(
-  manager: Manager,
+  manager: RpcClient,
   pending_message_id: PendingMessageId,
 ) {
   Manager(
@@ -107,19 +113,19 @@ fn mark_request_completed(
   )
 }
 
-fn handle_reply(manager: Manager, pending_message_id: PendingMessageId) {
+fn handle_reply(manager: RpcClient, pending_message_id: PendingMessageId) {
   case is_request_completed(manager, pending_message_id) {
     True -> manager
     False -> mark_request_completed(manager, pending_message_id)
   }
 }
 
-fn is_request_pending(manager: Manager, pending_message_id: PendingMessageId) {
+fn is_request_pending(manager: RpcClient, pending_message_id: PendingMessageId) {
   dict.has_key(manager.pending_requests, pending_message_id)
 }
 
 fn create_pending_request(
-  manager: Manager,
+  manager: RpcClient,
   pending_message_id: PendingMessageId,
   message: Message(Json),
 ) {

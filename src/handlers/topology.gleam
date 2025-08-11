@@ -3,11 +3,11 @@ import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/result
-import rpc_manager
+import maelstrom/rpc_client
 
-import context.{type Context}
-import messages.{type Message}
-import node
+import maelstrom/context.{type Context}
+import maelstrom/node
+import maelstrom/protocol.{type Message}
 
 type TopologyRequest {
   TopologyRequest(
@@ -58,7 +58,7 @@ pub fn handler(ctx: Context(state), message: Message(Dynamic)) {
     ))
 
   let response =
-    messages.Message(src: node_id, dest: message.src, body: response_body)
+    protocol.Message(src: node_id, dest: message.src, body: response_body)
 
-  Ok(rpc_manager.send_once(ctx.manager, response))
+  Ok(rpc_client.send_once(ctx.rpc_client, response))
 }

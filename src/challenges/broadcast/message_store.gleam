@@ -30,20 +30,20 @@ pub fn new() {
   messages
 }
 
-pub fn add_message(messages: Subject(Command), message: Int) {
+pub fn add_message(store: Subject(Command), message: Int) {
   // Idempotency: message can be stored only once.
-  let current_messages = read_messages(messages)
+  let current_messages = read_messages(store)
   case list.contains(current_messages, message) {
     True -> Nil
-    False -> actor.send(messages, Add(message))
+    False -> actor.send(store, Add(message))
   }
 }
 
-pub fn read_messages(messages: Subject(Command)) {
-  actor.call(messages, Read, 100)
+pub fn read_messages(store: Subject(Command)) {
+  actor.call(store, Read, 100)
 }
 
-pub fn is_new_message(messages: Subject(Command), message: Int) {
-  let current_messages = read_messages(messages)
+pub fn is_new_message(store: Subject(Command), message: Int) {
+  let current_messages = read_messages(store)
   !list.contains(current_messages, message)
 }

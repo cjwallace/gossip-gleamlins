@@ -4,10 +4,10 @@ import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/result
 
-import context.{type Context}
-import messages.{type Message}
-import node
-import rpc_manager
+import maelstrom/context.{type Context}
+import maelstrom/node
+import maelstrom/protocol.{type Message}
+import maelstrom/rpc_client
 
 import challenges/batched_broadcast/message_store
 
@@ -61,8 +61,8 @@ pub fn handler(
     ))
 
   let response =
-    messages.Message(src: node_id, dest: message.src, body: response_body)
+    protocol.Message(src: node_id, dest: message.src, body: response_body)
 
-  rpc_manager.send_once(ctx.manager, response)
+  rpc_client.send_once(ctx.rpc_client, response)
   Ok(Nil)
 }

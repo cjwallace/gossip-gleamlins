@@ -1,8 +1,8 @@
 import gleam/dict
 
-import context
 import handlers/init
-import maelstrom
+import maelstrom/context
+import maelstrom/rpc_server
 
 import challenges/generate/generate_handler
 
@@ -14,5 +14,5 @@ pub fn main() {
 
   let context = context.new()
 
-  maelstrom.run(context, handler_registry)
+  rpc_server.start(context, handler_registry)
 }

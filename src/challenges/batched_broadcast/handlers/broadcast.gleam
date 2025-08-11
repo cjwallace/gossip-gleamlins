@@ -9,10 +9,10 @@ import gleam/list
 import gleam/result
 import gleam/string
 
-import context.{type Context}
-import messages.{type Message}
-import node
-import rpc_manager
+import maelstrom/context.{type Context}
+import maelstrom/node
+import maelstrom/protocol.{type Message}
+import maelstrom/rpc_client
 
 import challenges/batched_broadcast/message_store
 
@@ -94,9 +94,9 @@ pub fn handler(
       in_reply_to: request_body.msg_id,
     ))
 
-  rpc_manager.send_once(
-    ctx.manager,
-    messages.Message(src: node_id, dest: request.src, body: response_body),
+  rpc_client.send_once(
+    ctx.rpc_client,
+    protocol.Message(src: node_id, dest: request.src, body: response_body),
   )
 
   case request_body {
@@ -171,9 +171,9 @@ fn broadcast(ctx: Context(Subject(message_store.Command))) {
           list.map(messages_to_broadcast, int.to_string),
           with: ", ",
         ))
-        rpc_manager.send_with_retry(
-          ctx.manager,
-          messages.Message(src: node_id, dest: n, body: request_body),
+        rpc_client.send_with_retry(
+          ctx.rpc_client,
+          protocol.Message(src: node_id, dest: n, body: request_body),
         )
       })
   }
