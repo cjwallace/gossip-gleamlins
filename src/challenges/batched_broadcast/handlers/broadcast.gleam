@@ -101,13 +101,13 @@ pub fn handler(
 
   case request_body {
     BroadcastRequest(_, _, message) -> {
-      message_store.add_message(ctx.state, message)
       message_store.enqueue_message(ctx.state, message)
+      message_store.store_message(ctx.state, message)
       schedule_batch_broadcast(ctx)
     }
     MultipleBroadcastRequest(_, _, messages) -> {
-      message_store.add_messages(ctx.state, messages)
       message_store.enqueue_messages(ctx.state, messages)
+      message_store.store_messages(ctx.state, messages)
       schedule_batch_broadcast(ctx)
     }
   }
@@ -118,10 +118,7 @@ pub fn handler(
 // If this process already exists, do nothing, the messages will be collected
 // by the already extant process.
 pub fn schedule_batch_broadcast(ctx: Context(Subject(message_store.Command))) {
-  debounce_with_lock("batching", 200, fn() {
-    broadcast(ctx)
-    message_store.clear_queue(ctx.state)
-  })
+  debounce_with_lock("batching", 200, fn() { broadcast(ctx) })
 }
 
 fn debounce_with_lock(lock_name: String, delay_ms: Int, task: fn() -> a) {
@@ -144,7 +141,7 @@ fn debounce_with_lock(lock_name: String, delay_ms: Int, task: fn() -> a) {
 }
 
 fn broadcast(ctx: Context(Subject(message_store.Command))) {
-  let messages_to_broadcast = message_store.read_queue(ctx.state)
+  let messages_to_broadcast = message_store.take_queue(ctx.state)
 
   let node_id = node.get_node_id(ctx.node)
 

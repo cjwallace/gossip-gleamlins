@@ -15,7 +15,7 @@ pub type Command {
   Read(reply_with: Subject(List(Int)))
   Enqueue(messages: List(Int))
   ReadQueue(reply_with: Subject(List(Int)))
-  ClearQueue
+  TakeQueue(reply_with: Subject(List(Int)))
 }
 
 fn handler(command: Command, store: Store) {
@@ -42,7 +42,8 @@ fn handler(command: Command, store: Store) {
       process.send(reply_with, store.queue)
       actor.continue(store)
     }
-    ClearQueue -> {
+    TakeQueue(reply_with) -> {
+      process.send(reply_with, store.queue)
       let updated_queue = Store(..store, queue: [])
       actor.continue(updated_queue)
     }
@@ -54,49 +55,50 @@ pub fn new() {
   messages
 }
 
-pub fn add_message(store: Subject(Command), message: Int) {
+fn deduplicate(new: List(a), current: List(a)) {
+  set.difference(set.from_list(new), set.from_list(current))
+  |> set.to_list
+}
+
+pub fn store_message(store: Subject(Command), message: Int) {
+  store_messages(store, [message])
+}
+
+pub fn store_messages(store: Subject(Command), new_messages: List(Int)) {
   let current_messages = read_messages(store)
-  case list.contains(current_messages, message) {
-    True -> Nil
-    False -> actor.send(store, Add([message]))
+  // Do not insert a message if it is already stored
+  let deduplicated_messages = deduplicate(new_messages, current_messages)
+  case deduplicated_messages {
+    [] -> Nil
+    _ -> actor.send(store, Add(deduplicated_messages))
   }
 }
 
-pub fn add_messages(store: Subject(Command), new_messages: List(Int)) {
-  let current_messages = read_messages(store)
-
-  // Do not insert a message if it is already stored
-  let deduplicated_messages =
-    set.difference(set.from_list(new_messages), set.from_list(current_messages))
-    |> set.to_list
-  actor.send(store, Add(deduplicated_messages))
-}
-
 pub fn enqueue_message(store: Subject(Command), message: Int) {
-  actor.send(store, Enqueue([message]))
+  enqueue_messages(store, [message])
 }
 
+/// Do not enqueue messages already stored, or already queued
 pub fn enqueue_messages(store: Subject(Command), new_messages: List(Int)) {
   let current_messages = read_messages(store)
-
+  let queued_messages = read_queue(store)
   let deduplicated_messages =
-    set.difference(set.from_list(new_messages), set.from_list(current_messages))
-    |> set.to_list
-
+    deduplicate(new_messages, list.append(current_messages, queued_messages))
   case deduplicated_messages {
     [] -> Nil
     _ -> actor.send(store, Enqueue(deduplicated_messages))
   }
 }
 
-pub fn read_queue(store: Subject(Command)) {
-  actor.call(store, Read, 100)
-}
-
-pub fn clear_queue(store: Subject(Command)) {
-  actor.send(store, ClearQueue)
-}
-
 pub fn read_messages(store: Subject(Command)) {
   actor.call(store, Read, 100)
+}
+
+pub fn read_queue(store: Subject(Command)) {
+  actor.call(store, ReadQueue, 100)
+}
+
+/// Read and clear the queue atomically
+pub fn take_queue(store: Subject(Command)) {
+  actor.call(store, TakeQueue, 100)
 }
