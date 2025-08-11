@@ -2,7 +2,7 @@
 MAELSTROM := 'maelstrom/maelstrom'
 
 # The binary for a single maelstrom node
-NODE := 'seastar'
+NODE := 'gossip'
 
 @list:
     just --list

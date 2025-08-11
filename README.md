@@ -1,4 +1,4 @@
-# seastar
+# Gossip Gleamlins
 
 Nascent [Maelstrom](https://github.com/jepsen-io/maelstrom/blob/main/doc/01-getting-ready/index.md) client in [Gleam](https://gleam.run/) to tackle the [Gossip Glomers](https://fly.io/dist-sys/) distributed systems challenges.
 This is me learning all of Maelstrom, Gleam, and distributed systems. Do not use as a reference for idiomatic Gleam code.
@@ -24,7 +24,7 @@ The client does not implement the full maelstrom protocol, and is evolving to se
 src
 ├── challenges      # code specific to each gossip glomers challenge
 ├── maelstrom       # maelstrom client code (RPC, node state and related message handlers etc)
-└── seastar.gleam   # entry point
+└── gossip.gleam    # entry point
 ```
 
 
