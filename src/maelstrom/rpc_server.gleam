@@ -1,12 +1,31 @@
+import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 import gleam/erlang
 import gleam/io
 import gleam/result
 
 import maelstrom/context.{type Context}
-import maelstrom/protocol
-import maelstrom/registry
+import maelstrom/protocol.{type Message}
 
-pub fn start(ctx: Context(state), handler_registry: registry.Registry(state)) {
+type Handler(state) =
+  fn(Context(state), Message(Dynamic)) -> Result(Nil, String)
+
+type Registry(state) =
+  Dict(String, Handler(state))
+
+pub fn dispatch(
+  ctx: Context(state),
+  registry: Registry(state),
+  message_type: String,
+  message: Message(Dynamic),
+) -> Result(Nil, String) {
+  case dict.get(registry, message_type) {
+    Ok(handler) -> handler(ctx, message)
+    Error(_) -> Error("Unknown message type: " <> message_type)
+  }
+}
+
+pub fn start(ctx: Context(state), handler_registry: Registry(state)) {
   let assert Ok(line) = erlang.get_line("")
 
   use request <- result.try(
@@ -21,7 +40,7 @@ pub fn start(ctx: Context(state), handler_registry: registry.Registry(state)) {
 
   // Dispatch synchronously (ensures, eg, node initialization has
   // completed before handling additional requests).
-  case registry.dispatch(ctx, handler_registry, message_type, request) {
+  case dispatch(ctx, handler_registry, message_type, request) {
     Ok(_) -> Nil
     Error(error) -> io.println_error("Unknown message type: " <> error)
   }
