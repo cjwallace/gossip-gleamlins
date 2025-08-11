@@ -36,3 +36,5 @@ src
   This is a learning project for me, and it might be useful to others!
 - More challenges!
   Currently implemented through the broadcast challenge.
+- Update some deps.
+  `gleam/erlang` and `gleam/otp` hit 1.0 since this repo began, with a couple of small API changes.
