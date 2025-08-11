@@ -8,11 +8,11 @@ This is me learning all of Maelstrom, Gleam, and distributed systems. Do not use
 See the included justfile. With the maelstrom executable is at `maelstrom/maelstrom` relative to the root of this repo, each challenge can be run with:
 
 ```bash
-just echo                   # ... echo (challenge 1)
-just generate               # unique per-node id generation (challenge 2)
-just broadcast              # multi-node fault-tolerant broadcast (challenge 3a..3c)
-just efficient-broadcast    # more efficient broadcast (challenge 3d..3e)
-just all                    # all of the above, with curtailed output
+just echo               # ... echo (challenge 1)
+just generate           # unique per-node id generation (challenge 2)
+just broadcast          # multi-node fault-tolerant broadcast (challenge 3a..3c)
+just batched-broadcast  # more message-efficient broadcast (challenge 3d..3e)
+just all                # all of the above, with curtailed output
 ```
 
 ## Organisation
