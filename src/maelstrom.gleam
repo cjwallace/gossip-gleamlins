@@ -23,7 +23,7 @@ pub fn run(ctx: Context(state), handler_registry: registry.Registry(state)) {
   // completed before handling additional requests).
   case registry.dispatch(ctx, handler_registry, message_type, request) {
     Ok(_) -> Nil
-    Error(error) -> io.println_error("Unknown message type: {}" <> error)
+    Error(error) -> io.println_error("Unknown message type: " <> error)
   }
 
   run(ctx, handler_registry)

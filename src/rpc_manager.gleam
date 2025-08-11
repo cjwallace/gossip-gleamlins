@@ -76,7 +76,7 @@ pub fn handler(command: Command, manager: Manager) {
 fn send(message: Message(Json)) {
   process.start(
     fn() { messages.encode_message(message) |> io.println },
-    linked: False,
+    linked: True,
   )
 }
 
@@ -84,7 +84,7 @@ fn retry(message: Message(Json), reply_with: Subject(Command)) {
   send(message)
   process.start(
     fn() {
-      process.sleep(jitter())
+      process.sleep(jitter(400, 200))
       process.send(reply_with, SendWithRetry(reply_with, message))
     },
     linked: True,
@@ -133,8 +133,8 @@ fn create_pending_request(
   )
 }
 
-fn jitter() {
-  400 + int.random(100)
+fn jitter(base: Int, max_add: Int) {
+  base + int.random(max_add)
 }
 
 pub fn new() {

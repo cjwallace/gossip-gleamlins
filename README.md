@@ -11,7 +11,7 @@ See the included justfile. With the maelstrom executable is at `maelstrom/maelst
 just echo                # ... echo (challenge 1)
 just generate            # unique per-node id generation (challenge 2)
 just broadcast           # multi-node fault-tolerant broadcast (challenge 3a..3c)
-just efficient-broadcast # more efficient broadcast (challenge 3d)
+just efficient-broadcast # more efficient broadcast (challenge 3d..3e)
 ```
 
 ## Notes
