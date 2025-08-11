@@ -1,3 +1,10 @@
+/// The environment/context for a maelstrom node.
+/// Bundles:
+/// - Maestrom node state
+/// - The RPC client
+/// - Any additional state (used by individual challenges)
+/// Since the whole system is actor based, the "states" here are really Subjects
+/// through which the respective actors can be sent Commands.
 import gleam/erlang/process.{type Subject}
 
 import maelstrom/node

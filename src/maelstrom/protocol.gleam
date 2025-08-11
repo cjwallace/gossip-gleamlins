@@ -1,3 +1,5 @@
+/// The maelstrom message format.
+/// This is not a complete protocol implementation, notably missing error message types.
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json.{type Json}

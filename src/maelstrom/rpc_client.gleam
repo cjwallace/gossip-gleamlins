@@ -1,6 +1,5 @@
-// RPC client, for sending RPC requests.
-// Includes retry logic.
-
+/// RPC client, for sending RPC messages.
+/// Includes retry logic.
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/process.{type Subject}

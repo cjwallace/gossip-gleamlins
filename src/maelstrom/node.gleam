@@ -1,3 +1,7 @@
+/// An actor for storing maelstrom node state:
+/// - the node Id
+/// - the Ids of all nodes in the network,
+/// - and the network topology.
 import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
 import gleam/otp/actor
