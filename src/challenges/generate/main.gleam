@@ -1,7 +1,7 @@
 import gleam/dict
 
-import handlers/init
 import maelstrom/context
+import maelstrom/handlers/init
 import maelstrom/rpc_server
 
 import challenges/generate/generate_handler

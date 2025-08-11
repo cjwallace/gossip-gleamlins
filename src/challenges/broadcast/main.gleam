@@ -1,9 +1,9 @@
 import gleam/dict
 import gleam/erlang/process.{type Subject}
 
-import handlers/init
-import handlers/topology
 import maelstrom/context.{type Context}
+import maelstrom/handlers/init
+import maelstrom/handlers/topology
 import maelstrom/rpc_client
 import maelstrom/rpc_server
 

@@ -23,8 +23,7 @@ The client does not implement the full maelstrom protocol, and is evolving to se
 ```bash
 src
 ├── challenges      # code specific to each gossip glomers challenge
-├── handlers        # message handlers that are challenge independent (node initialization, network topology)
-├── maelstrom       # maelstrom client code (RPC, node state, etc)
+├── maelstrom       # maelstrom client code (RPC, node state and related message handlers etc)
 └── seastar.gleam   # entry point
 ```
 

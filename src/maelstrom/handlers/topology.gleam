@@ -1,13 +1,16 @@
+/// Network topology handler.
+/// Stores the network topology on the Node.
+/// Neighbours are calculated at runtime.
 import gleam/dict
 import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode
 import gleam/json
 import gleam/result
-import maelstrom/rpc_client
 
 import maelstrom/context.{type Context}
 import maelstrom/node
 import maelstrom/protocol.{type Message}
+import maelstrom/rpc_client
 
 type TopologyRequest {
   TopologyRequest(
